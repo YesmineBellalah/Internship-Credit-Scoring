@@ -1,0 +1,2 @@
+# Internship-Credit-Scoring
+Recent Methods from Statistics and Machine Learning for Credit Scoring When a bank receives a loan application, based on the applicant’s profile the bank has to make a decision regarding whether to go ahead with the loan approval or not. To minimize loss from the bank’s perspective, the bank needs a decision system regarding who to give approval of the loan and who not to.  1) Develop classification model using Logistic Regression (LR) 2)- Assess the performance of the model using the confusion matrix and the ROC curve
