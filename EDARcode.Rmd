@@ -1,0 +1,263 @@
+
+---
+title: ' Credit Scoring : Explanatory Data Analysis  '
+author: "Yesmine Bellalah"
+date: "Juin 2016"
+output:
+  word_document: default
+  pdf_document:
+    toc: yes
+  html_document:
+    fig_caption: yes
+    fig_width: 8
+    highlight: tango
+    theme: cerulean
+    toc: yes
+---
+#Credit Scoring : Exploratory Data Analysis
+
+**Impoting training set**
+
+```{r,echo=TRUE , warning=FALSE}
+
+data=read.csv(file = file.choose(),row.names = 1)
+View(data)
+
+```
+
+**Exploring data**
+
+```{r, echo=TRUE, warning=FALSE}
+summary(data)
+str(data)
+
+```
+
+
+**Verification and visiualisation of  missing values**
+
+```{r,echo=TRUE,warning=FALSE}
+sapply(data,function(x) sum(is.na(x)) ) 
+library(Rcpp)
+library(Amelia)
+missmap(data,main="missing values per variable",col = c("white","blue"))
+```
+
+**Converting ordinal variables to  factors to indicate that these variables should be treated as  categoricals variables** 
+
+```{r,echo=TRUE, warning=FALSE}
+for (i in c(2, 4:5, 7:13,15:21))
+{data[,i]=as.factor(data[,i])}
+
+```
+
+**converting continuous variables to numeric**
+
+```{r,echo=TRUE,warning=FALSE}
+data$Age..years.=as.numeric(data$Age..years.)
+data$Duration.of.Credit..month.=as.numeric(data$Duration.of.Credit..month.)
+data$Credit.Amount=as.double(data$Credit.Amount)
+
+```
+
+**Separating factors and contiunous variables**
+
+```{r,echo=TRUE,warning=FALSE}
+quanti=data[,c(1,3,6,14)]
+quali=data[,-c(1,3,6,14)]
+```
+
+
+#Univariate analysis
+
+**1- Visualisation of the response variable Creditability**
+
+```{r,echo=TRUE,warning=FALSE}
+library(ggplot2)
+library(stats)
+library(base)
+library(dplyr)
+library(scales) 
+d=as.data.frame(table(data$Creditability))
+d
+d$legend= c("Insolvent","Solvent")
+
+blank_theme = 
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.ticks = element_blank(),
+    plot.title=element_text(size=14, face="bold")
+        )
+bp=ggplot(d, aes(x="", y=d$Freq, fill=d$legend))+
+   geom_bar(width = 1, stat = "identity")
+
+pie=bp + coord_polar("y", start=0)
+target=pie + ggtitle("Creditworthiness") + blank_theme +
+       theme(axis.text.x=element_blank())+
+       geom_text(aes(y = d$Freq/2 + c(0, cumsum(d$Freq)[-length(d$Freq)]), 
+       label = percent(d$Freq/sum(d$Freq))), size=5)+labs(fill="legend")
+target
+
+```
+
+**2-Explanatory variables**
+
+**2-1-continuous variables**
+
+Density and histogram 
+
+```{r,echo=TRUE,warning=FALSE}
+library(ggplot2)
+ggplot(data, aes(x=data$Age..years.)) + geom_histogram(aes(y=..density..), binwidth=.5, colour="black", fill="blue") + geom_density(alpha=.4, fill="#FF7667")  +geom_vline(aes(xintercept=mean(data$Age..years., na.rm=T)), color="red", linetype="dashed", size=1)
+
+ggplot(data, aes(x=data$Duration.of.Credit..month.)) + geom_histogram(aes(y=..density..), binwidth=.5, colour="black", fill="blue") + geom_density(alpha=.4, fill="green")  +geom_vline(aes(xintercept=mean(data$Duration.of.Credit..month., na.rm=T)), color="red", linetype="dashed", size=1)
+
+ggplot(data, aes(x=data$Credit.Amount)) + geom_histogram(aes(y=..density..), binwidth=.5, colour="black", fill="blue")  +geom_vline(aes(xintercept=mean(data$Credit.Amount, na.rm=T)), color="red", linetype="dashed", size=1)
+ggplot(data, aes(x=data$Credit.Amount))+ geom_density(alpha=.4, fill="#FF7667")  +geom_vline(aes(xintercept=mean(data$Credit.Amount, na.rm=T)), color="red", linetype="dashed", size=1)
+```
+
+Dynamic Boxplots 
+ 
+ 
+```{r,echo=TRUE,warning=FALSE}
+library(plotly)
+plot_ly(data,x=Age..years.,color=Creditability, type="box",boxpoints="all", jitter=0.4)
+plot_ly(data,x=Duration.of.Credit..month.,color=Creditability, type="box",boxpoints="all", jitter=0.4)
+plot_ly(data,x=Credit.Amount,color=Creditability, type="box",boxpoints="all", jitter=0.4)
+```
+
+**2-2-Factors**
+
+Dynamic Pies 
+
+```{r,echo=TRUE,warning=FALSE}
+table(data$Account.Balance)
+p1=plot_ly(data, labels = c(1,2,3), values = table(data$Account.Balance), type = "pie")
+p2=layout(p1, title = "Account Balance ")
+p2
+
+table(data$Payment.Status.of.Previous.Credit)
+p3=plot_ly(data, labels = c(1,2,3), values = table(data$Payment.Status.of.Previous.Credit), type = "pie")
+p4=layout(p3, title = "Payment.Status.of.Previous.Credit")
+p4
+
+table(data$Purpose)
+p5=plot_ly(data, labels = c(1,2,3,4), values = table(data$Purpose), type = "pie")
+p6=layout(p5, title = "Purpose ")
+p6
+
+table(data$Value.Savings.Stocks)
+p7=plot_ly(data, labels = c(1,2,3,4), values = table(data$Value.Savings.Stocks), type = "pie")
+p8=layout(p7, title = "Value savings stocks ")
+p8
+
+table(data$Instalment.per.cent)
+p9=plot_ly(data, labels = c(1,2,3,4), values = table(data$Instalment.per.cent), type = "pie")
+p10=layout(p9, title = "Insatalment ")
+p10
+
+table(data$Sex...Marital.Status)
+p11=plot_ly(data, labels = c(1,2,3), values = table(data$Sex...Marital.Status), type = "pie")
+p12=layout(p11, title = "Sex")
+p12
+
+table(data$Guarantors)
+p13=plot_ly(data, labels = c(1,2), values = table(data$Guarantors), type = "pie")
+p14=layout(p13, title = "Guarontors ")
+p14
+
+table(data$Duration.in.Current.address)
+p15=plot_ly(data, labels = c(1,2,3,4), values = table(data$Duration.in.Current.address), type = "pie")
+p16=layout(p15, title = "Duration in current address")
+p16
+
+table(data$Most.valuable.available.asset)
+p17=plot_ly(data, labels = c(1,2,3,4), values = table(data$Most.valuable.available.asset), type = "pie")
+p18=layout(p17, title = "Most valuable available asset")
+p18
+
+table(data$Concurrent.Credits)
+p19=plot_ly(data, labels = c(1,2), values = table(data$Concurent.Credits), type = "pie")
+p20=layout(p19, title = "Concurrent.Credits")
+p20
+
+table(data$Type.of.apartment)
+p21=plot_ly(data, labels = c(1,2,3), values = table(data$Type.of.apartment), type = "pie")
+p22=layout(p21, title = "Type of apartment")
+p22
+
+table(data$No.of.Credits.at.this.Bank)
+p23=plot_ly(data, labels = c(1,2), values = table(data$No.of.Credits.at.this.Bank), type = "pie")
+p24=layout(p23, title = "No of credit in this bank ")
+p24
+
+table(data$Occupation)
+p25=plot_ly(data, labels = c(1), values = table(data$Occupation), type = "pie")
+p26=layout(p25, title = "Occupation ")
+p26
+
+table(data$No.of.dependents)
+p27=plot_ly(data, labels = c(1,2), values = table(data$No.of.dependents), type = "pie")
+p28=layout(p27, title = "No of dependents")
+p28
+
+table(data$Telephone)
+p29=plot_ly(data, labels = c(1,2), values = table(data$Telephone), type = "pie")
+p30=layout(p29, title = "Telephone")
+p30
+
+table(data$Foreign.Worker)
+p31=plot_ly(data, labels = c(1,2), values = table(data$Foreign.Worker), type = "pie")
+p32=layout(p31, title = "Foreign worker")
+p32
+```
+
+#Visualisation of the response variable in function of the explanatory variables**
+
+**Factors**
+
+```{r,echo=TRUE,warning=FALSE}
+plot(data$Account.Balance,data$Creditability)
+plot(data$Purpose,data$Creditability)
+plot(data$Payment.Status.of.Previous.Credit,data$Creditability)
+plot(data$Value.Savings.Stocks,data$Creditability)
+plot(data$Length.of.current.employment,data$Creditability)
+plot(data$Instalment.per.cent,data$Creditability)
+plot(data$Sex...Marital.Status,data$Creditability)
+plot(data$Guarantors,data$Creditability)
+plot(data$Duration.in.Current.address,data$Creditability)
+plot(data$Most.valuable.available.asset,data$Creditability)
+plot(data$Concurrent.Credits,data$Creditability)
+plot(data$Type.of.apartment,data$Creditability)
+plot(data$No.of.Credits.at.this.Bank,data$Creditability)
+plot(data$No.of.dependents,data$Creditability)
+plot(data$Telephone,data$Creditability)
+plot(data$Foreign.Worke,data$Creditability)
+```
+
+**continuous variables** 
+
+```{r,echo=TRUE,warning=FALSE}
+
+ggplot(data, aes(x = data$Duration.of.Credit..month.)) +stat_density(aes(group = data$Creditability, color =data$Creditability ),position="identity",geom="line")
+ggplot(data, aes(x = data$Age..years)) +stat_density(aes(group = data$Creditability, color =data$Creditability ),position="identity",geom="line")
+ggplot(data, aes(x = data$Credit.Amount)) +stat_density(aes(group = data$Creditability, color =data$Creditability ),position="identity",geom="line")
+
+```
+
+#Correlation Matrix 
+
+```{r,echo=TRUE,warning=FALSE}
+
+library(corrplot)
+N=cor(quanti)
+corrplot(N,method = "number",type="upper")
+library(corrgram)
+corrplot.mixed(N, lower = "ellipse", upper = "number")
+
+```
+
+
+
+

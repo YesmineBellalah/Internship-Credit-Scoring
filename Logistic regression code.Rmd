@@ -1,0 +1,223 @@
+---
+title: ' Credit Scoring : Logistic Regression '
+author: "Yesmine Bellalah"
+date: "Juin 2016"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    fig_caption: yes
+    fig_width: 8
+    highlight: tango
+    theme: cerulean
+    toc: yes
+---
+# Introduction 
+
+Logistic Regression is a type of classification model. 
+
+**Assumptions**
+
+- The model should have little or no multicollinearity 
+
+- The independent variables( continuous ) are linearly related to the log odds ( not the dependent and independent variables to be related linearly)
+
+- Error terms need to be independent
+
+
+
+
+
+#Import training data 
+
+```{r, echo=TRUE}
+
+data=read.csv(file=file.choose(),row.names = 1)
+
+```
+
+#Converting ordinal variables to  factors to indicate that these variables should be treated as  categoricals variables 
+
+```{r, echo=TRUE,warning=FALSE}
+
+for (i in c(2, 4:5, 7:13,15:21))
+{data[,i]=as.factor(data[,i])}
+
+
+data$Age..years.=as.numeric(data$Age..years.)
+data$Duration.of.Credit..month.=as.numeric(data$Duration.of.Credit..month.)
+data$Credit.Amount=as.double(data$Credit.Amount)
+
+```
+
+#Getting rid of " Occupation " variable 
+```{r,echo=TRUE }
+data=data[,-18]
+str(data)
+View(data)
+```
+
+#Logistic regression 
+
+**First model**
+
+To fit the logistic regression model :
+
+```{r,echo=TRUE , warning=FALSE}
+m1 <- glm(formula= data$Creditability ~ ., data=data, family=binomial(link = 'logit' ) )
+summary(m1)
+
+```
+
+#Which variables to keep ? 
+
+The step() function iteratively tries to remove predictor variables from the model in an attempt to delete variables that do not significantly add to the fit
+
+```{r, echo= TRUE , warning= FALSE}
+fit1 = step(m1)
+
+```
+
+**Second model** 
+
+```{r,echo=TRUE,warning=FALSE}
+m2=glm(formula = Creditability ~ Account.Balance + Duration.of.Credit..month. + 
+                 Payment.Status.of.Previous.Credit + Purpose + Credit.Amount + 
+                 Value.Savings.Stocks + Length.of.current.employment + Instalment.per.cent + 
+                 Sex...Marital.Status + Duration.in.Current.address + Concurrent.Credits + 
+                 No.of.dependents, family = binomial(link = "logit"), data = data)
+
+summary(m2)
+
+```
+
+#Check multicollinearity between variables 
+
+```{r, echo=TRUE , warning=FALSE}
+library(car)
+fit2=vif(m2)
+fit2
+
+```
+
+#Test for correlated residuals 
+
+p-value=0.92 => errors are not correlated 
+
+```{r, echo=TRUE , warning=FALSE}
+durbinWatsonTest(m2)
+```
+
+crplots plots the residuals against the predictors, allowing us to see which categorical variables contributed the most to variance, or allowing us to spot possible patterns in the residuals on numerical variables.
+
+```{r, echo=FALSE , warning=FALSE}
+crPlots(m2)
+
+```
+
+#Check linearity log odds - varibale 
+
+```{r}
+
+```
+
+
+#Assess the performance of the model
+
+Import the test data 
+Convert variables 
+
+```{r,echo=TRUE , warning=FALSE}
+test=read.csv(file=file.choose(),row.names = 1)
+for (i in c(2, 4:5, 7:13,15:21))
+{test[,i]=as.factor(test[,i])}
+
+test=test[,-18]
+
+test$Age..years.=as.numeric(test$Age..years.)
+test$Duration.of.Credit..month.=as.numeric(test$Duration.of.Credit..month.)
+test$Credit.Amount=as.double(test$Credit.Amount)
+str(test)
+```
+
+#First model
+
+**1) ROC curve**
+
+```{r,echo=TRUE , warning=FALSE}
+library(gplots)
+library(stats)
+library(ROCR)
+
+fitpreds = predict(m1,newdata=test,type="response")
+fitpred = prediction(fitpreds,test$Creditability)
+fitperf = performance(fitpred,"tpr","fpr")
+plot(fitperf,col="blue",lwd=2,main="ROC Curve for Logistic regression ")
+abline(a=0,b=1,lwd=2,lty=2,col="black")
+
+```
+
+**2) Confusion matrix**
+
+
+```{r,echo=TRUE , warning=FALSE}
+model_pred_probs=predict(m1, newdata=test, type="response")
+model_pred_creditability=rep(0, 500)
+model_pred_creditability[model_pred_probs > 0.5]=1
+
+library( gmodels)
+CrossTable(model_pred_creditability, test$Creditability , format = "SAS")
+mean(model_pred_creditability!=test$Creditability)
+
+```
+
+**3) AUC**
+
+```{r}
+perf=performance(fitpred, "auc")
+perf@y.values[[1]]
+```
+
+#Second model
+
+**1) ROC curve**
+
+```{r,echo=TRUE , warning=FALSE}
+library(gplots)
+library(stats)
+library(ROCR)
+
+
+fitpreds = predict(m2,newdata=test,type="response")
+fitpred = prediction(fitpreds,test$Creditability)
+fitperf = performance(fitpred,"tpr","fpr")
+plot(fitperf,col="blue",lwd=2,main="ROC Curve for Logistic regression ")
+abline(a=0,b=1,lwd=2,lty=2,col="black")
+
+
+
+```
+
+**2) Confusion matrix**
+
+
+```{r,echo=TRUE , warning=FALSE}
+
+model_pred_probs=predict(m2, newdata=test, type="response")
+model_pred_creditability=rep(0, 500)
+model_pred_creditability[model_pred_probs > 0.5]=1
+
+library( gmodels)
+CrossTable(model_pred_creditability, test$Creditability , format = "SAS")
+mean(model_pred_creditability!=test$Creditability)
+
+
+```
+
+**3) AUC**
+
+```{r}
+perf=performance(fitpred, "auc")
+perf@y.values[[1]]
+```
+
